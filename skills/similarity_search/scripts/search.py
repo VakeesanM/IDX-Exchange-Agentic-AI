@@ -14,10 +14,10 @@ def get_embedding(text: str, model="text-embedding-3-small") -> list[float]:
 
 def build_listing_embedding(row: dict) -> list[float]:
     text = f"""
-    {row["L_Type_"]} in {row["L_City"]}, CA.
-    {row["L_Keyword2"]} beds, {row["LM_Dec_3"]} baths.
-    {row["LM_Int2_3"]} sq ft. Built {row["YearBuilt"]}.
-    Price: ${row["L_SystemPrice"]:,}.
+    {row["type"]} in {row["L_City"]}, CA.
+    {row["beds"]} beds, {row["baths"]} baths.
+    {row["sqft"]} sq ft. Built {row["YearBuilt"]}.
+    Price: ${row["price"]:,}.
     {row.get("L_Remarks", "")}
     """.strip()
     return get_embedding(text)
@@ -26,8 +26,9 @@ def build_all_listing_embeddings(listings: list[dict]) -> list[tuple[str, list[f
     result = []
     for row in listings:
         embedding = build_listing_embedding(row)
-        result.append((row["L_ID"], embedding))
+        result.append((row["L_ListingID"], embedding))
     return result
+
 
 def find_similar_listings(
  query: str,
