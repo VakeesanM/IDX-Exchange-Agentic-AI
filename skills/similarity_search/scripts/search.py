@@ -1,18 +1,23 @@
-from openai import OpenAI
+from openai import AsyncOpenAI
 import numpy as np
 from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
+import asyncio
 
 load_dotenv()
 
-client = OpenAI()
+client = AsyncOpenAI()
+MAX_CONCURRENCY = 10
+_sem = asyncio.Semaphore(MAX_CONCURRENCY)
 
-def get_embedding(text: str, model="text-embedding-3-small") -> list[float]:
+async def get_embedding(text: str, model: str = "text-embedding-3-small") -> list[float]:
     text = text.replace("\n", " ").strip()[:8000]
-    response = client.embeddings.create(model=model, input=text)
+    async with _sem:
+        response = await client.embeddings.create(model=model, input=text)
     return response.data[0].embedding
 
-def build_listing_embedding(row: dict) -> list[float]:
+
+async def build_listing_embedding(row: dict) -> list[float]:
     text = f"""
     {row["L_Type_"]} in {row["L_City"]}, CA.
     {row["L_Keyword2"]} beds, {row["LM_Dec_3"]} baths.
@@ -20,14 +25,18 @@ def build_listing_embedding(row: dict) -> list[float]:
     Price: ${row["L_SystemPrice"]:,}.
     {row.get("L_Remarks", "")}
     """.strip()
-    return get_embedding(text)
+    return await get_embedding(text)
+
 
 def build_all_listing_embeddings(listings: list[dict]) -> list[tuple[str, list[float]]]:
-    result = []
-    for row in listings:
-        embedding = build_listing_embedding(row)
-        result.append((row["L_ID"], embedding))
-    return result
+    async def _run() -> list[list[float]]:
+        sem = asyncio.Semaphore(MAX_CONCURRENCY)  # created inside the running loop
+        return await asyncio.gather(
+            *(build_listing_embedding(row, sem) for row in listings)
+        )
+
+    embeddings = asyncio.run(_run())
+    return [(row["L_ID"], emb) for row, emb in zip(listings, embeddings)]
 
 def find_similar_listings(
  query: str,
