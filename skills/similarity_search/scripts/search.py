@@ -19,16 +19,17 @@ async def get_embedding(text: str, model: str = "text-embedding-3-small") -> lis
 
 async def build_listing_embedding(row: dict) -> list[float]:
     text = f"""
-    {row["L_Type_"]} in {row["L_City"]}, CA.
-    {row["L_Keyword2"]} beds, {row["LM_Dec_3"]} baths.
-    {row["LM_Int2_3"]} sq ft. Built {row["YearBuilt"]}.
-    Price: ${row["L_SystemPrice"]:,}.
+    {row["type"]} in {row["L_City"]}, CA.
+    {row["beds"]} beds, {row["baths"]} baths.
+    {row["sqft"]} sq ft. Built {row["YearBuilt"]}.
+    Price: ${row["price"]:,}.
     {row.get("L_Remarks", "")}
     """.strip()
     return await get_embedding(text)
 
 
 def build_all_listing_embeddings(listings: list[dict]) -> list[tuple[str, list[float]]]:
+<<<<<<< HEAD
     async def _run() -> list[list[float]]:
         sem = asyncio.Semaphore(MAX_CONCURRENCY)  # created inside the running loop
         return await asyncio.gather(
@@ -37,6 +38,14 @@ def build_all_listing_embeddings(listings: list[dict]) -> list[tuple[str, list[f
 
     embeddings = asyncio.run(_run())
     return [(row["L_ID"], emb) for row, emb in zip(listings, embeddings)]
+=======
+    result = []
+    for row in listings:
+        embedding = build_listing_embedding(row)
+        result.append((row["L_ListingID"], embedding))
+    return result
+>>>>>>> 125f60beb7e3b0f6d5be161a402aa15d037de799
+
 
 def find_similar_listings(
  query: str,

@@ -1,4 +1,17 @@
 import mysql from "mysql2/promise";
+import dotenv from "dotenv";
+import path from "path";
+import fs from "fs";
+
+const envPath = path.resolve(__dirname, "../../../../.env");
+
+
+if (!fs.existsSync(envPath)) {
+  throw new Error(`.env not found at ${envPath}`);
+}
+
+dotenv.config({ path: envPath, override: true, quiet: true });
+
 
 const pool = mysql.createPool({
   host:     process.env.MYSQL_HOST,
@@ -9,6 +22,7 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
 });
+
 
 export async function query<T>(sql: string, params: any[] = []): Promise<T[]> {
   const [rows] = await pool.execute(sql, params);
