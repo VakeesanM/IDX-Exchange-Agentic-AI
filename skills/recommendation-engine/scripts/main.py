@@ -80,3 +80,24 @@ def validate_with_comps(city: str, sqft: int, price: int) -> dict:
         "comp_count": comp_count,
         "delta_pct": round((price - comp_price) / comp_price * 100, 1),
     }
+
+def validate_all(targets, candiates, target_embs, candiates_emb, k=3):
+
+    sims = calcaute_all_sim(targets, candiates, target_embs, candiates_emb)
+    valid = {}
+    for target in sims.keys():
+        city = target['L_City']
+        sqft = target['LM_Int2_3']
+        validiation = validate_with_comps(city, sqft)
+        valid[target] = validiation['comp_price']
+
+    recoms = []
+    i = 0
+    for target in valid.keys():
+        if i == k:
+            break
+        if valid[target]:
+            recoms.append(target)
+            i += 1
+
+    return recoms
